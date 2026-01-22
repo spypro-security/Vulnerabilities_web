@@ -29,8 +29,7 @@ function Register() {
 
     try {
       const response = await register(username, password, email);
-      alert(`Account created successfully! You can now login with:\nUsername: ${username}\nPassword: ${password}\n\nTry SQL Injection: ${username}' --`);
-      navigate('/login');
+      navigate('/login', { state: { successMessage: 'Account created successfully! You can now login with your credentials.' } });
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {
@@ -91,7 +90,7 @@ function Register() {
                 required
                 className="form-input"
               />
-              <small className="help-text">Note: Weak passwords accepted (for testing)</small>
+              
             </div>
 
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>

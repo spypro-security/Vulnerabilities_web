@@ -20,7 +20,6 @@ function Dashboard({ user }) {
       setViewedProfile(response.data);
       console.log('Accessed user data:', response.data);
     } catch (error) {
-      alert('User not found');
       setViewedProfile(null);
     }
   };
@@ -59,9 +58,7 @@ function Dashboard({ user }) {
     try {
       const response = await exportUsers();
       console.log('📊 ALL USER DATA:', response.data);
-      alert('✅ User data exported to console! Check browser DevTools.');
     } catch (error) {
-      alert('❌ Export failed');
     }
   };
 

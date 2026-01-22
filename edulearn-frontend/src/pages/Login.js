@@ -1,19 +1,22 @@
 /**
- * Registration Page
- * File: src/pages/Register.js
+ * Login Page
+ * File: src/pages/Login.js
  */
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { register } from '../services/api';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { login } from '../services/api';
 
-function Register() {
+function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get success message from navigation state
+  const successMessage = location.state?.successMessage;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,18 +24,19 @@ function Register() {
     setLoading(true);
 
     // Basic validation
-    if (!username || !password || !email) {
+    if (!username || !password) {
       setError('All fields are required');
       setLoading(false);
       return;
     }
 
     try {
-      const response = await register(username, password, email);
-      alert(`Account created successfully! You can now login with:\nUsername: ${username}\nPassword: ${password}\n\nTry SQL Injection: ${username}' --`);
-      navigate('/login');
+      const response = await login(username, password);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('token', response.data.token);
+      navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed');
+      setError(err.response?.data?.error || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -43,9 +47,15 @@ function Register() {
       <div className="login-container">
         <div className="login-box">
           <div className="login-header">
-            <h1>Create Your Account</h1>
-            <p>Join EduLearn and start learning today</p>
+            <h1>Sign In</h1>
+            <p>Welcome back to EduLearn</p>
           </div>
+
+          {successMessage && (
+            <div className="alert alert-success">
+              {successMessage}
+            </div>
+          )}
 
           {error && (
             <div className="alert alert-error">
@@ -61,20 +71,7 @@ function Register() {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Choose a username"
-                required
-                className="form-input"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@example.com"
+                placeholder="Enter your username"
                 required
                 className="form-input"
               />
@@ -87,21 +84,20 @@ function Register() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Choose a password"
+                placeholder="Enter your password"
                 required
                 className="form-input"
               />
-              <small className="help-text">Note: Weak passwords accepted (for testing)</small>
             </div>
 
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-              {loading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 
           <div className="login-footer">
             <p className="help-text">
-              Already have an account? <Link to="/login">Sign in here</Link>
+              Don't have an account? <Link to="/register">Create one here</Link>
             </p>
           </div>
         </div>
@@ -110,4 +106,4 @@ function Register() {
   );
 }
 
-export default Register;
+export default Login;

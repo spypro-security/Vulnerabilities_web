@@ -47,7 +47,6 @@ function Courses({ user }) {
     if (window.confirm('Delete this course?')) {
       try {
         await deleteCourse(courseId);
-        alert('Course deleted!');
         loadCourses();
       } catch (error) {
         console.error('Delete failed:', error);
@@ -68,11 +67,9 @@ function Courses({ user }) {
         title: newTitle,
         description: newDescription,
       });
-      alert('Course updated!');
       loadCourses();
     } catch (error) {
       console.error('Update failed:', error);
-      alert('Failed to update course. See console for details.');
     }
   };
 

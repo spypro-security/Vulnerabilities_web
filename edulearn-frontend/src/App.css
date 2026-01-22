@@ -314,6 +314,12 @@ body {
   border: 1px solid #fecaca;
 }
 
+.alert-success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
 .login-form {
   display: flex;
   flex-direction: column;

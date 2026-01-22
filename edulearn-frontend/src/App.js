@@ -8,6 +8,8 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';  // ADD THIS
+
 import Courses from './pages/Courses';
 import Dashboard from './pages/Dashboard';
 import './App.css';
@@ -46,6 +48,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="/register" element={<Register />} />  {/* ADD THIS */}
+
           <Route path="/courses" element={<Courses user={user} />} />
           <Route
             path="/dashboard"

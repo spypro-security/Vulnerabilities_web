@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { getCourses, searchCourses, deleteCourse, getComments, addComment } from '../services/api';
+import { getCourses, searchCourses, deleteCourse, getComments, addComment, updateCourse } from '../services/api';
 
 function Courses({ user }) {
   const [courses, setCourses] = useState([]);
@@ -55,11 +55,43 @@ function Courses({ user }) {
     }
   };
 
+  const handleEdit = async (course) => {
+    // Simple inline edit flow: prompt for new title and description
+    const newTitle = window.prompt('Edit course title:', course.title);
+    if (newTitle === null) return; // user cancelled
+
+    const newDescription = window.prompt('Edit course description:', course.description || '');
+    if (newDescription === null) return;
+
+    try {
+      await updateCourse(course.id, {
+        title: newTitle,
+        description: newDescription,
+      });
+      alert('Course updated!');
+      loadCourses();
+    } catch (error) {
+      console.error('Update failed:', error);
+      alert('Failed to update course. See console for details.');
+    }
+  };
+
   const loadComments = async (courseId) => {
     try {
       const response = await getComments(courseId);
       setComments(response.data.comments);
       setSelectedCourse(courseId);
+      console.log('Loaded comments for course:', courseId);
+      
+      // Render XSS content after state updates
+      setTimeout(() => {
+        response.data.comments.forEach((comment) => {
+          const element = document.getElementById(`comment-${comment.id}`);
+          if (element) {
+            element.innerHTML = comment.content;
+          }
+        });
+      }, 100);
     } catch (error) {
       console.error('Failed to load comments:', error);
     }
@@ -75,6 +107,17 @@ function Courses({ user }) {
       loadComments(courseId);
     } catch (error) {
       console.error('Failed to add comment:', error);
+    }
+  };
+
+  const toggleComments = (courseId) => {
+    if (selectedCourse === courseId) {
+      // If clicking the same course, close it
+      setSelectedCourse(null);
+      setComments([]);
+    } else {
+      // Load comments for the new course
+      loadComments(courseId);
     }
   };
 
@@ -118,7 +161,7 @@ function Courses({ user }) {
                 <span className="course-price">${course.price}</span>
                 {user && (
                   <div className="course-actions">
-                    <button className="btn btn-sm btn-warning">Edit</button>
+                    <button onClick={() => handleEdit(course)} className="btn btn-sm btn-warning">Edit</button>
                     <button 
                       onClick={() => handleDelete(course.id)}
                       className="btn btn-sm btn-danger"
@@ -130,10 +173,10 @@ function Courses({ user }) {
               </div>
 
               <button
-                onClick={() => loadComments(course.id)}
+                onClick={() => toggleComments(course.id)}
                 className="btn btn-secondary btn-block"
               >
-                View Reviews
+                {selectedCourse === course.id ? 'Hide Reviews' : 'View Reviews'}
               </button>
 
               {selectedCourse === course.id && (
@@ -142,21 +185,21 @@ function Courses({ user }) {
                   <div className="comments-list">
                     {comments.map((comment) => (
                       <div key={comment.id} className="comment">
-                        <strong>{comment.user}:</strong>
-                        {/* VULNERABILITY: Rendering unsanitized HTML */}
-                        <span dangerouslySetInnerHTML={{ __html: comment.content }} />
+                        <strong>{comment.user}: </strong>
+                        {/* VULNERABILITY: Rendering unsanitized HTML via innerHTML */}
+                        <span id={`comment-${comment.id}`}></span>
                       </div>
                     ))}
                   </div>
 
                   {user && (
                     <div className="add-comment">
-                      <input
-                        type="text"
+                      <textarea
                         value={newComment}
                         onChange={(e) => setNewComment(e.target.value)}
                         placeholder="Write your review..."
                         className="form-input"
+                        rows="3"
                       />
                       <button
                         onClick={() => handleAddComment(course.id)}
@@ -177,3 +220,4 @@ function Courses({ user }) {
 }
 
 export default Courses;
+

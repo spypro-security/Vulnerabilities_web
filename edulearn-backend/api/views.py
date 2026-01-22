@@ -1,6 +1,7 @@
 """
 API Views with intentional vulnerabilities
 File: backend/api/views.py
+COMPLETE VERSION - Copy this entire file
 """
 
 from rest_framework.decorators import api_view, permission_classes
@@ -16,16 +17,24 @@ from .serializers import UserSerializer, CourseSerializer
 logger = logging.getLogger(__name__)
 
 
+# ============================================
 # VULNERABILITY 1: SQL Injection
+# ============================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
+    """
+    Login endpoint vulnerable to SQL Injection
+    Test: username: admin' OR '1'='1 -- 
+    """
     username = request.data.get('username', '')
     password = request.data.get('password', '')
     
     # VULNERABLE: Raw SQL with string concatenation
     query = f"SELECT * FROM users WHERE username='{username}' AND password='{password}'"
-    logger.debug(f"SQL: {query}")
+    
+    # VULNERABILITY: Logging sensitive queries
+    logger.debug(f"Executing SQL Query: {query}")
     
     try:
         with connection.cursor() as cursor:
@@ -35,203 +44,445 @@ def login(request):
             
             if user_data:
                 user_dict = dict(zip(columns, user_data))
+                
+                # VULNERABILITY: Exposing sensitive data in response
                 return Response({
                     'success': True,
-                    'token': f'token-{username}',
+                    'token': f'fake-jwt-token-{username}',
                     'user': {
                         'id': user_dict['id'],
                         'username': user_dict['username'],
                         'email': user_dict['email'],
                         'role': user_dict['role'],
-                        'ssn': user_dict.get('ssn'),
-                        'credit_card': user_dict.get('credit_card'),
+                        'ssn': user_dict.get('ssn'),  # Exposing SSN!
+                        'credit_card': user_dict.get('credit_card'),  # Exposing CC!
                     }
-                })
+                }, status=status.HTTP_200_OK)
+                
     except Exception as e:
+        # VULNERABILITY: Detailed error messages
         logger.error(f"SQL Error: {str(e)}")
-        return Response({'error': str(e)}, status=400)
+        return Response({
+            'error': str(e),
+            'query': query  # Exposing query in error
+        }, status=status.HTTP_400_BAD_REQUEST)
     
-    return Response({'error': 'Invalid credentials'}, status=401)
+    return Response({
+        'error': 'Invalid credentials'
+    }, status=status.HTTP_401_UNAUTHORIZED)
 
 
-# VULNERABILITY 2: Broken Authentication
+# ============================================
+# VULNERABILITY 2 & 8: Broken Authentication
+# ============================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
+    """
+    Registration with no rate limiting or password validation
+    """
     username = request.data.get('username')
-    password = request.data.get('password')
+    password = request.data.get('password')  # No strength requirements
     email = request.data.get('email')
     
     if User.objects.filter(username=username).exists():
-        return Response({'error': 'Username exists'}, status=400)
+        return Response({
+            'error': 'Username already exists'
+        }, status=status.HTTP_400_BAD_REQUEST)
     
-    user = User.objects.create_user(username=username, password=password, email=email)
-    logger.info(f"New user: {username} with password: {password}")
+    # VULNERABILITY: Accepting weak passwords
+    user = User.objects.create_user(
+        username=username,
+        password=password,
+        email=email
+    )
     
-    return Response({'message': 'User created', 'user': UserSerializer(user).data}, status=201)
+    logger.info(f"New user registered: {username} with password: {password}")  # Logging password!
+    
+    return Response({
+        'message': 'User created successfully',
+        'user': UserSerializer(user).data
+    }, status=status.HTTP_201_CREATED)
 
 
+# ============================================
 # VULNERABILITY 3: XSS - Reflected
+# ============================================
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def search_courses(request):
+    """
+    Search endpoint vulnerable to reflected XSS
+    Test: ?q=<script>alert('XSS')</script>
+    """
     query = request.GET.get('q', '')
-    courses = Course.objects.filter(title__icontains=query) | Course.objects.filter(description__icontains=query)
+    
+    # VULNERABILITY: No input sanitization
+    courses = Course.objects.filter(
+        title__icontains=query
+    ) | Course.objects.filter(
+        description__icontains=query
+    )
     
     return Response({
-        'query': query,  # Unsanitized reflection
+        'query': query,  # Reflecting unsanitized input
+        'count': courses.count(),
         'results': CourseSerializer(courses, many=True).data
     })
 
 
-# VULNERABILITY 4: IDOR
+# ============================================
+# VULNERABILITY 6: IDOR
+# ============================================
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_user_profile(request, user_id):
+    """
+    View any user's profile without authorization
+    Test: /api/users/1/, /api/users/2/, etc.
+    """
+    # VULNERABILITY: No authorization check
     try:
         user = User.objects.get(id=user_id)
+        
+        # VULNERABILITY: Exposing ALL sensitive data
         return Response({
             'id': user.id,
             'username': user.username,
             'email': user.email,
             'role': user.role,
-            'ssn': user.ssn,
-            'credit_card': user.credit_card,
+            'ssn': user.ssn,  # SSN exposed!
+            'credit_card': user.credit_card,  # Credit card exposed!
             'phone': user.phone,
+            'date_joined': user.date_joined,
+            'last_login': user.last_login,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser
         })
     except User.DoesNotExist:
-        return Response({'error': 'User not found'}, status=404)
+        return Response({
+            'error': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
-# VULNERABILITY 5: Broken Access Control
+# ============================================
+# VULNERABILITY 2: Broken Access Control
+# ============================================
 @api_view(['PUT', 'DELETE'])
 @permission_classes([AllowAny])
 def manage_course(request, course_id):
+    """
+    Edit/delete any course without ownership check
+    """
     try:
         course = Course.objects.get(id=course_id)
         
+        # VULNERABILITY: No ownership or permission verification
         if request.method == 'PUT':
             course.title = request.data.get('title', course.title)
+            course.description = request.data.get('description', course.description)
             course.price = request.data.get('price', course.price)
             course.save()
-            return Response({'message': 'Course updated'})
+            
+            logger.info(f"Course {course_id} updated by anonymous user")
+            
+            return Response({
+                'message': 'Course updated successfully',
+                'course': CourseSerializer(course).data
+            })
         
         elif request.method == 'DELETE':
+            course_title = course.title
             course.delete()
-            return Response({'message': 'Course deleted'})
+            
+            logger.info(f"Course '{course_title}' deleted by anonymous user")
+            
+            return Response({
+                'message': f'Course "{course_title}" deleted successfully'
+            })
+            
     except Course.DoesNotExist:
-        return Response({'error': 'Course not found'}, status=404)
+        return Response({
+            'error': 'Course not found'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
-# VULNERABILITY 6: File Upload
+# ============================================
+# VULNERABILITY 5: File Upload
+# ============================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def upload_assignment(request):
+    """
+    File upload with NO validation
+    Test: Upload .exe, .php, .sh files
+    """
     file = request.FILES.get('file')
-    if not file:
-        return Response({'error': 'No file'}, status=400)
+    title = request.data.get('title', 'Untitled Assignment')
+    course_id = request.data.get('course_id', 1)
+    user_id = request.data.get('user_id', 1)
     
-    # NO VALIDATION!
+    if not file:
+        return Response({
+            'error': 'No file provided'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # VULNERABILITY: No file type validation
+    # VULNERABILITY: No file size limit
+    # VULNERABILITY: No malware scanning
+    # VULNERABILITY: No filename sanitization
+    
+    logger.debug(f"File upload: {file.name}, size: {file.size}, type: {file.content_type}")
+    
     assignment = Assignment.objects.create(
-        title=request.data.get('title', 'Assignment'),
+        title=title,
         file=file,
-        course_id=request.data.get('course_id', 1),
-        student_id=request.data.get('user_id', 1)
+        course_id=course_id,
+        student_id=user_id
     )
     
     return Response({
-        'message': 'Uploaded',
+        'message': 'File uploaded successfully',
         'filename': file.name,
-        'url': assignment.file.url
-    }, status=201)
+        'size': file.size,
+        'content_type': file.content_type,
+        'url': request.build_absolute_uri(assignment.file.url)
+    }, status=status.HTTP_201_CREATED)
 
 
-# VULNERABILITY 7: CSRF
+# ============================================
+# VULNERABILITY 4: CSRF
+# ============================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def delete_account(request):
+    """
+    Delete user account - vulnerable to CSRF
+    No token validation
+    """
     user_id = request.data.get('user_id')
+    
+    # VULNERABILITY: Can be triggered via CSRF attack
     try:
         user = User.objects.get(id=user_id)
+        username = user.username
         user.delete()
-        return Response({'message': 'User deleted'})
+        
+        logger.warning(f"User {username} (ID: {user_id}) deleted via potential CSRF")
+        
+        return Response({
+            'message': f'User "{username}" deleted successfully'
+        })
     except User.DoesNotExist:
-        return Response({'error': 'User not found'}, status=404)
+        return Response({
+            'error': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
-# VULNERABILITY 8: SSRF
+# ============================================
+# VULNERABILITY 10: SSRF
+# ============================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def fetch_resource(request):
+    """
+    Fetch external resource - SSRF vulnerability
+    Test: http://localhost:8000/admin
+          http://169.254.169.254/latest/meta-data/
+    """
     url = request.data.get('url', '')
     
+    # VULNERABILITY: No URL validation or whitelist
+    # Can access internal services, cloud metadata, etc.
+    
+    logger.debug(f"Fetching URL: {url}")
+    
     try:
-        response = requests.get(url, timeout=5)
+        # VULNERABILITY: Making requests to user-provided URLs
+        response = requests.get(url, timeout=5, allow_redirects=True)
+        
         return Response({
             'url': url,
-            'status': response.status_code,
-            'content': response.text[:2000]
+            'status_code': response.status_code,
+            'headers': dict(response.headers),
+            'content': response.text[:2000],  # First 2000 chars
+            'content_length': len(response.text)
         })
-    except Exception as e:
-        return Response({'error': str(e)}, status=400)
+    except requests.exceptions.RequestException as e:
+        return Response({
+            'error': str(e),
+            'url': url
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
+# ============================================
 # VULNERABILITY 9: Sensitive Data Exposure
+# ============================================
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def export_users(request):
+    """
+    Export ALL user data including sensitive info
+    No admin check
+    """
+    # VULNERABILITY: Anyone can export all user data
     users = User.objects.all()
-    user_data = [{
-        'id': u.id,
-        'username': u.username,
-        'email': u.email,
-        'password': u.password,
-        'ssn': u.ssn,
-        'credit_card': u.credit_card,
-    } for u in users]
     
-    logger.info(f"Exported {len(user_data)} users")
-    return Response({'users': user_data})
+    user_data = []
+    for user in users:
+        user_data.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'password': user.password,  # Password hash exposed!
+            'ssn': user.ssn,  # SSN exposed!
+            'credit_card': user.credit_card,  # CC exposed!
+            'phone': user.phone,
+            'role': user.role,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+            'last_login': user.last_login.isoformat() if user.last_login else None
+        })
+    
+    # VULNERABILITY: Logging all sensitive data
+    logger.info(f"User data export: {len(user_data)} users exported")
+    logger.debug(f"Exported data: {user_data}")
+    
+    return Response({
+        'count': len(user_data),
+        'users': user_data
+    })
 
 
-# VULNERABILITY 10: XSS - Stored
+# ============================================
+# VULNERABILITY 3: XSS - Stored
+# ============================================
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def add_comment(request):
-    comment = Comment.objects.create(
-        course_id=request.data.get('course_id'),
-        user_id=request.data.get('user_id', 1),
-        content=request.data.get('content', '')  # No sanitization
-    )
-    return Response({'id': comment.id, 'content': comment.content}, status=201)
+    """
+    Add comment with stored XSS vulnerability
+    Test: <img src=x onerror=alert('XSS')>
+    """
+    try:
+        course_id = request.data.get('course_id')
+        content = request.data.get('content', '')
+        user_id = request.data.get('user_id', 1)
+        
+        # Validate course exists
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response(
+                {'error': 'Course not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Validate user exists
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'User not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # VULNERABILITY: Storing unsanitized HTML/JavaScript
+        # No escaping, no sanitization - accepts everything
+        comment = Comment.objects.create(
+            course_id=course_id,
+            user_id=user_id,
+            content=content  # Raw content stored directly
+        )
+        
+        logger.debug(f"Comment added: {content}")
+        
+        return Response({
+            'id': comment.id,
+            'user': user.username,
+            'content': content,  # Returning raw content
+            'created_at': comment.created_at.isoformat() if comment.created_at else None
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        logger.error(f"Error adding comment: {str(e)}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_comments(request, course_id):
-    comments = Comment.objects.filter(course_id=course_id).select_related('user')
-    return Response({
-        'comments': [{
-            'id': c.id,
-            'user': c.user.username,
-            'content': c.content,  # XSS payload
-        } for c in comments]
-    })
+    """Get comments for a course - XSS vulnerability when displayed"""
+    try:
+        # Check if course exists
+        try:
+            course = Course.objects.get(id=course_id)
+        except Course.DoesNotExist:
+            return Response({
+                'course_id': course_id,
+                'count': 0,
+                'comments': []
+            })
+        
+        # Get comments with related user
+        comments = Comment.objects.filter(course_id=course_id).select_related('user')
+        
+        # VULNERABILITY: Returning unsanitized comments (Stored XSS)
+        comment_list = []
+        for c in comments:
+            comment_list.append({
+                'id': c.id,
+                'user': c.user.username,
+                'content': c.content,  # Raw HTML/JS returned without escaping
+                'created_at': c.created_at.isoformat() if c.created_at else None
+            })
+        
+        return Response({
+            'course_id': course_id,
+            'count': len(comment_list),
+            'comments': comment_list
+        })
+    except Exception as e:
+        logger.error(f"Error getting comments: {str(e)}")
+        return Response(
+            {'error': str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 
-# Regular endpoints
+# ============================================
+# Regular API Endpoints
+# ============================================
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_courses(request):
-    courses = Course.objects.all()
+    """Get all courses"""
+    courses = Course.objects.all().order_by('-created_at')
     return Response(CourseSerializer(courses, many=True).data)
 
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_course(request, course_id):
+    """Get single course"""
     try:
         course = Course.objects.get(id=course_id)
         return Response(CourseSerializer(course).data)
     except Course.DoesNotExist:
-        return Response({'error': 'Not found'}, status=404)
+        return Response({
+            'error': 'Course not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """API health check"""
+    return Response({
+        'status': 'running',
+        'message': 'EduLearn API - Deliberately Vulnerable for Training'
+    })

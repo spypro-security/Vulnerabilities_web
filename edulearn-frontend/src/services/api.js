@@ -14,6 +14,29 @@ const api = axios.create({
   },
 });
 
+// Add response interceptor to check for vulnerability flags
+api.interceptors.response.use(
+  (response) => {
+    // Check if response contains a flag
+    if (response.data && response.data.flag) {
+      // Dispatch custom event for flag capture
+      window.dispatchEvent(new CustomEvent('vulnerabilityFlagCaptured', {
+        detail: { flag: response.data.flag }
+      }));
+    }
+    return response;
+  },
+  (error) => {
+    // Check if error response contains a flag
+    if (error.response && error.response.data && error.response.data.flag) {
+      window.dispatchEvent(new CustomEvent('vulnerabilityFlagCaptured', {
+        detail: { flag: error.response.data.flag }
+      }));
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Authentication
 export const login = (username, password) => {
   return api.post('/auth/login/', { username, password });

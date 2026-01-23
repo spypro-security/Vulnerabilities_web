@@ -45,8 +45,7 @@ def login(request):
             if user_data:
                 user_dict = dict(zip(columns, user_data))
                 
-                # VULNERABILITY: Exposing sensitive data in response
-                return Response({
+                response_data = {
                     'success': True,
                     'token': f'fake-jwt-token-{username}',
                     'user': {
@@ -57,7 +56,13 @@ def login(request):
                         'ssn': user_dict.get('ssn'),  # Exposing SSN!
                         'credit_card': user_dict.get('credit_card'),  # Exposing CC!
                     }
-                }, status=status.HTTP_200_OK)
+                }
+                
+                # Add flag only if SQL injection was used (demonstrates vulnerability)
+                if any(inject in username.lower() for inject in ["' or '", "' or 1=1", "--", "union select"]):
+                    response_data['flag'] = 'HQX{SQL_Injection flag captured}'
+                
+                return Response(response_data, status=status.HTTP_200_OK)
                 
     except Exception as e:
         # VULNERABILITY: Detailed error messages
@@ -99,10 +104,16 @@ def register(request):
     
     logger.info(f"New user registered: {username} with password: {password}")  # Logging password!
     
-    return Response({
+    response_data = {
         'message': 'User created successfully',
         'user': UserSerializer(user).data
-    }, status=status.HTTP_201_CREATED)
+    }
+    
+    # Add flag only if password is weak (demonstrates vulnerability)
+    if len(password) < 6:
+        response_data['flag'] = 'HQX{Broken_Authentication flag captured}'
+    
+    return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 # ============================================
@@ -124,11 +135,17 @@ def search_courses(request):
         description__icontains=query
     )
     
-    return Response({
+    response_data = {
         'query': query,  # Reflecting unsanitized input
         'count': courses.count(),
         'results': CourseSerializer(courses, many=True).data
-    })
+    }
+    
+    # Add flag only if XSS payload is detected (demonstrates vulnerability)
+    if any(xss in query.lower() for xss in ["<script>", "javascript:", "onerror", "onclick"]):
+        response_data['flag'] = 'HQX{XSS_Reflected flag captured}'
+    
+    return Response(response_data)
 
 
 # ============================================
@@ -147,6 +164,7 @@ def get_user_profile(request, user_id):
         
         # VULNERABILITY: Exposing ALL sensitive data
         return Response({
+            'flag': 'HQX{IDOR flag captured}',  # Flag for IDOR vulnerability
             'id': user.id,
             'username': user.username,
             'email': user.email,
@@ -188,6 +206,7 @@ def manage_course(request, course_id):
             
             return Response({
                 'message': 'Course updated successfully',
+                'flag': 'HQX{Broken_Access_Control flag captured}',  # Flag for unauthorized course management
                 'course': CourseSerializer(course).data
             })
         
@@ -198,7 +217,8 @@ def manage_course(request, course_id):
             logger.info(f"Course '{course_title}' deleted by anonymous user")
             
             return Response({
-                'message': f'Course "{course_title}" deleted successfully'
+                'message': f'Course "{course_title}" deleted successfully',
+                'flag': 'HQX{Broken_Access_Control flag captured}',  # Flag for unauthorized course deletion
             })
             
     except Course.DoesNotExist:
@@ -243,6 +263,7 @@ def upload_assignment(request):
     
     return Response({
         'message': 'File uploaded successfully',
+        'flag': 'HQX{File_Upload flag captured}',  # Flag for insecure file upload
         'filename': file.name,
         'size': file.size,
         'content_type': file.content_type,
@@ -271,7 +292,8 @@ def delete_account(request):
         logger.warning(f"User {username} (ID: {user_id}) deleted via potential CSRF")
         
         return Response({
-            'message': f'User "{username}" deleted successfully'
+            'message': f'User "{username}" deleted successfully',
+            'flag': 'HQX{CSRF flag captured}',  # Flag for CSRF vulnerability
         })
     except User.DoesNotExist:
         return Response({
@@ -303,6 +325,7 @@ def fetch_resource(request):
         
         return Response({
             'url': url,
+            'flag': 'HQX{SSRF flag captured}',  # Flag for SSRF vulnerability
             'status_code': response.status_code,
             'headers': dict(response.headers),
             'content': response.text[:2000],  # First 2000 chars
@@ -351,6 +374,7 @@ def export_users(request):
     
     return Response({
         'count': len(user_data),
+        'flag': 'HQX{Sensitive_Data_Exposure flag captured}',  # Flag for data exposure
         'users': user_data
     })
 
@@ -398,12 +422,18 @@ def add_comment(request):
         
         logger.debug(f"Comment added: {content}")
         
-        return Response({
+        response_data = {
             'id': comment.id,
             'user': user.username,
             'content': content,  # Returning raw content
             'created_at': comment.created_at.isoformat() if comment.created_at else None
-        }, status=status.HTTP_201_CREATED)
+        }
+        
+        # Add flag only if XSS payload is detected (demonstrates vulnerability)
+        if any(xss in content.lower() for xss in ["<script>", "javascript:", "onerror", "onclick", "<img"]):
+            response_data['flag'] = 'HQX{XSS_Stored flag captured}'
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
         
     except Exception as e:
         logger.error(f"Error adding comment: {str(e)}")
@@ -433,6 +463,7 @@ def get_comments(request, course_id):
         
         # VULNERABILITY: Returning unsanitized comments (Stored XSS)
         comment_list = []
+        has_xss = False
         for c in comments:
             comment_list.append({
                 'id': c.id,
@@ -440,12 +471,21 @@ def get_comments(request, course_id):
                 'content': c.content,  # Raw HTML/JS returned without escaping
                 'created_at': c.created_at.isoformat() if c.created_at else None
             })
+            # Check if this comment contains XSS payload
+            if any(xss in c.content.lower() for xss in ["<script>", "javascript:", "onerror", "onclick", "<img"]):
+                has_xss = True
         
-        return Response({
+        response_data = {
             'course_id': course_id,
             'count': len(comment_list),
             'comments': comment_list
-        })
+        }
+        
+        # Add flag only if XSS payload is found in comments (demonstrates vulnerability)
+        if has_xss:
+            response_data['flag'] = 'HQX{XSS_Stored flag captured}'
+        
+        return Response(response_data)
     except Exception as e:
         logger.error(f"Error getting comments: {str(e)}")
         return Response(

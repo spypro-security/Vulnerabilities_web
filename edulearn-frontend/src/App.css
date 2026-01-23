@@ -784,3 +784,93 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Vulnerability Flag Notification */
+.flag-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  animation: slideIn 0.5s ease-out;
+}
+
+.flag-notification-content {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+  min-width: 350px;
+  max-width: 500px;
+  overflow: hidden;
+}
+
+.flag-notification-header {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.flag-emoji {
+  font-size: 1.5rem;
+  margin-right: 12px;
+}
+
+.flag-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.flag-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.flag-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.flag-message {
+  padding: 16px 20px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.1);
+  word-break: break-all;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .flag-notification {
+    left: 20px;
+    right: 20px;
+    top: 20px;
+  }
+  
+  .flag-notification-content {
+    min-width: auto;
+  }
+}

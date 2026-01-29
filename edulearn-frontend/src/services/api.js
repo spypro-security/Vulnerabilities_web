@@ -107,4 +107,9 @@ export const fetchResource = (url) => {
   return api.post('/fetch/', { url });
 };
 
+// Database Query Interface (Duplicate DB - Safe to test)
+export const executeQueryVulnerable = (query) => {
+  return api.post('/db/vulnerable-query/', { query });
+};
+
 export default api;

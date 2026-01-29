@@ -31,6 +31,7 @@ function Navbar({ user, isLoggedIn, onLogout }) {
         <div className={`navbar-menu ${open ? 'open' : ''}`} onClick={() => setOpen(false)}>
           <Link to="/" className="nav-link">Home</Link>
           <Link to="/courses" className="nav-link">Courses</Link>
+          <Link to="/database" className="nav-link">🛡️ Database Lab</Link>
           
           {isLoggedIn ? (
             <>

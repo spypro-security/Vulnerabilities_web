@@ -31,6 +31,9 @@ urlpatterns = [
     
     # SSRF
     path('fetch/', views.fetch_resource),
+    
+    # Database Query Interface (Duplicate DB - Safe to test)
+    path('db/vulnerable-query/', views.execute_query_vulnerable),
 ]
 
 

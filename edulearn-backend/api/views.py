@@ -11,6 +11,8 @@ from rest_framework import status
 from django.db import connection
 import logging
 import requests
+import sqlite3
+import os
 from .models import User, Course, Assignment, Comment
 from .serializers import UserSerializer, CourseSerializer
 
@@ -526,3 +528,168 @@ def health_check(request):
         'status': 'running',
         'message': 'EduLearn API - Deliberately Vulnerable for Training'
     })
+
+
+# ============================================
+# VULNERABILITY 11: Database Query Interface (Duplicate DB)
+# ============================================
+def get_vulnerable_db_connection():
+    """Get connection to the duplicate vulnerable database"""
+    db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'vulnerable_db.sqlite3')
+
+    # Create database and tables if they don't exist
+    if not os.path.exists(db_path):
+        create_vulnerable_database(db_path)
+
+    return sqlite3.connect(db_path)
+
+
+def create_vulnerable_database(db_path):
+    """Create and populate the duplicate vulnerable database"""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # Create tables
+    cursor.execute('''
+        CREATE TABLE employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE,
+            salary REAL,
+            ssn TEXT,
+            credit_card TEXT,
+            department TEXT,
+            role TEXT DEFAULT 'employee'
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE sensitive_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            data_type TEXT,
+            content TEXT,
+            access_level TEXT
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE flags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            flag_name TEXT,
+            flag_value TEXT,
+            captured BOOLEAN DEFAULT FALSE
+        )
+    ''')
+
+    # Insert sample data
+    employees_data = [
+        ('John Doe', 'john@company.com', 75000.00, '123-45-6789', '4111-1111-1111-1111', 'Engineering', 'employee'),
+        ('Jane Smith', 'jane@company.com', 85000.00, '987-65-4321', '4222-2222-2222-2222', 'HR', 'manager'),
+        ('Bob Johnson', 'bob@company.com', 65000.00, '456-78-9012', '4333-3333-3333-3333', 'Sales', 'employee'),
+        ('Alice Brown', 'alice@company.com', 95000.00, '321-54-9876', '4444-4444-4444-4444', 'Executive', 'admin'),
+        ('Charlie Wilson', 'charlie@company.com', 55000.00, '654-32-1987', '4555-5555-5555-5555', 'IT', 'employee'),
+    ]
+
+    cursor.executemany('INSERT INTO employees (name, email, salary, ssn, credit_card, department, role) VALUES (?, ?, ?, ?, ?, ?, ?)', employees_data)
+
+    sensitive_data = [
+        ('API Keys', 'sk-1234567890abcdef, pk-abcdef1234567890', 'confidential'),
+        ('Database Passwords', 'admin:SuperSecret123!, user:Password456!', 'restricted'),
+        ('Internal IPs', '192.168.1.100, 10.0.0.50, 172.16.0.25', 'internal'),
+        ('Encryption Keys', 'AES_KEY_1234567890123456, RSA_PRIVATE_KEY_abcdef...', 'top_secret'),
+    ]
+
+    cursor.executemany('INSERT INTO sensitive_data (data_type, content, access_level) VALUES (?, ?, ?)', sensitive_data)
+
+    flags_data = [
+        ('Database_Access', 'HQX{Database_Query_Interface flag captured}', False),
+        ('Data_Exfiltration', 'HQX{Sensitive_Data_Exposed flag captured}', False),
+        ('Admin_Escalation', 'HQX{Privilege_Escalation flag captured}', False),
+    ]
+
+    cursor.executemany('INSERT INTO flags (flag_name, flag_value, captured) VALUES (?, ?, ?)', flags_data)
+
+    conn.commit()
+    conn.close()
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def execute_query_vulnerable(request):
+    """
+    Execute arbitrary SQL queries on DUPLICATE database - SEVERE VULNERABILITY
+    Allows viewing tables, altering data, and complete database control
+    This uses a separate vulnerable database for safe testing
+    Test: {"query": "SELECT * FROM employees"}
+    Test: {"query": "DROP TABLE employees"}
+    """
+    query = request.data.get('query', '')
+
+    if not query:
+        return Response({
+            'error': 'Query parameter is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # VULNERABILITY: Execute ANY SQL query without validation
+    # Can view all tables, modify data, drop tables, etc.
+
+    logger.warning(f"Executing arbitrary SQL query on vulnerable DB: {query}")
+
+    try:
+        conn = get_vulnerable_db_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(query)
+
+        # Handle SELECT queries (return results)
+        if query.strip().upper().startswith('SELECT') or query.strip().upper().startswith('SHOW'):
+            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+            rows = cursor.fetchall()
+
+            # Convert to list of dicts for JSON response
+            results = []
+            for row in rows:
+                results.append(dict(zip(columns, row)))
+
+            response_data = {
+                'query': query,
+                'columns': columns,
+                'rows': results,
+                'count': len(results),
+                'database': 'vulnerable_db.sqlite3 (DUPLICATE - SAFE TO TEST)',
+                'flag': 'HQX{Database_Query_Interface flag captured}'
+            }
+
+            # Special flag for sensitive data access
+            if 'sensitive_data' in query.lower() or 'ssn' in query.lower() or 'credit_card' in query.lower():
+                response_data['flag'] = 'HQX{Sensitive_Data_Exposed flag captured}'
+
+            # Special flag for admin escalation
+            if 'role' in query.lower() and ('admin' in query.lower() or 'update' in query.lower()):
+                response_data['flag'] = 'HQX{Privilege_Escalation flag captured}'
+
+        # Handle other queries (INSERT, UPDATE, DELETE, etc.)
+        else:
+            # Get affected rows count
+            affected_rows = cursor.rowcount
+            conn.commit()
+
+            response_data = {
+                'query': query,
+                'message': f'Query executed successfully. Affected rows: {affected_rows}',
+                'affected_rows': affected_rows,
+                'database': 'vulnerable_db.sqlite3 (DUPLICATE - SAFE TO TEST)',
+                'flag': 'HQX{Database_Query_Interface flag captured}'
+            }
+
+        conn.close()
+        return Response(response_data)
+
+    except Exception as e:
+        logger.error(f"Vulnerable DB query error: {str(e)}")
+        return Response({
+            'error': str(e),
+            'query': query,
+            'database': 'vulnerable_db.sqlite3 (DUPLICATE - SAFE TO TEST)',
+            'flag': 'HQX{Database_Query_Interface flag captured}'
+        }, status=status.HTTP_400_BAD_REQUEST)

@@ -9,6 +9,7 @@ import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';  // ADD THIS
+import Database from './pages/Database';  // ADD THIS
 
 import Courses from './pages/Courses';
 import Dashboard from './pages/Dashboard';
@@ -65,6 +66,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login onLogin={handleLogin} />} />
           <Route path="/register" element={<Register />} />  {/* ADD THIS */}
+          <Route path="/database" element={<Database />} />  {/* ADD THIS */}
 
           <Route path="/courses" element={<Courses user={user} />} />
           <Route

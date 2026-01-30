@@ -160,7 +160,7 @@ function Courses({ user }) {
 
               <div className="course-footer">
                 <span className="course-price">${course.price}</span>
-                {user && (
+                {user && user.role === 'admin' && (
                   <div className="course-actions">
                     <button onClick={() => handleEdit(course)} className="btn btn-sm btn-warning">Edit</button>
                     <button 

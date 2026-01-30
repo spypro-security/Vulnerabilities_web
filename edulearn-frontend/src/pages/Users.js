@@ -9,16 +9,23 @@ import React, { useState, useEffect } from 'react';
 import { getUsers, deleteUser } from '../services/api';
 import '../styles/Users.css';
 
-function Users() {
+function Users({ user }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [showCSRFModal, setShowCSRFModal] = useState(false);
   const [targetUserId, setTargetUserId] = useState(null);
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
+    // Redirect if not admin
+    if (!isAdmin) {
+      alert('Access denied. Only admins can access this page.');
+      window.location.href = '/';
+      return;
+    }
     fetchUsers();
-  }, []);
+  }, [isAdmin]);
 
   const fetchUsers = async () => {
     try {

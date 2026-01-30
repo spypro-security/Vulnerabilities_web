@@ -159,8 +159,41 @@ def search_courses(request):
 
 
 # ============================================
-# VULNERABILITY 6: IDOR
+# VULNERABILITY 6: IDOR & Sensitive Data Exposure
 # ============================================
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_users(request):
+    """
+    Get all users data - vulnerable to unauthorized access
+    Returns all sensitive information without authentication
+    """
+    # VULNERABILITY: No authorization check - anyone can view all users
+    users = User.objects.all()
+    
+    user_list = []
+    for user in users:
+        user_list.append({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role,
+            'phone': user.phone,
+            'ssn': user.ssn,  # SSN exposed!
+            'credit_card': user.credit_card,  # Credit card exposed!
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser,
+            'date_joined': user.date_joined.isoformat() if user.date_joined else None,
+        })
+    
+    logger.warning(f"All users data accessed - {len(user_list)} users exposed")
+    
+    return Response({
+        'count': len(user_list),
+        'users': user_list
+    })
+
+
 @api_view(['GET'])
 @permission_classes([AllowAny])
 def get_user_profile(request, user_id):

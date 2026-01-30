@@ -68,6 +68,20 @@ body {
   color: #2563eb;
 }
 
+.nav-link.users-link {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.4rem;
+  font-weight: 600;
+}
+
+.nav-link.users-link:hover {
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
 .nav-user {
   color: #6b7280;
   font-size: 0.9rem;

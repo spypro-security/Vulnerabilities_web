@@ -1,0 +1,317 @@
+/**
+ * Users Management Styles
+ * File: src/styles/Users.css
+ */
+
+.users-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+  min-height: calc(100vh - 60px);
+}
+
+.users-container h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 30px;
+  font-size: 2.5rem;
+}
+
+/* Controls */
+.users-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.btn-danger-dark {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: #1976d2;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #1565c0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn-secondary {
+  background-color: #757575;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #616161;
+}
+
+.btn-danger {
+  background-color: #d32f2f;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c62828;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(211, 47, 47, 0.3);
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-danger-dark {
+  background-color: #7d1a1a;
+  color: white;
+}
+
+.btn-danger-dark:hover:not(:disabled) {
+  background-color: #5c1313;
+}
+
+.btn-danger-dark:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* CSRF Modal */
+.csrf-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.csrf-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.csrf-modal h2 {
+  margin-top: 0;
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.csrf-modal p {
+  margin: 15px 0;
+  line-height: 1.6;
+}
+
+.user-selection-list {
+  max-height: 400px;
+  overflow-y: auto;
+  margin: 20px 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.csrf-user-item {
+  padding: 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.csrf-user-item:last-child {
+  border-bottom: none;
+}
+
+.csrf-user-item:hover {
+  background-color: #f5f5f5;
+}
+
+.csrf-user-item strong {
+  color: #1976d2;
+  font-size: 16px;
+}
+
+.user-email {
+  color: #666;
+  font-size: 13px;
+  margin-top: 5px;
+  width: 100%;
+}
+
+/* Table */
+.users-table-wrapper {
+  overflow-x: auto;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.users-table thead {
+  background-color: #1976d2;
+  color: white;
+}
+
+.users-table th {
+  padding: 16px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #1565c0;
+}
+
+.users-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.users-table tbody tr {
+  transition: background-color 0.2s;
+}
+
+.users-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.users-table tbody tr.selected {
+  background-color: #e3f2fd;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role-badge.role-admin {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.role-badge.role-instructor {
+  background-color: #f3e5f5;
+  color: #6a1b9a;
+}
+
+.role-badge.role-student {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* Delete Button */
+.btn-delete-small {
+  padding: 6px 12px;
+  background-color: #d32f2f;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+
+.btn-delete-small:hover {
+  background-color: #c62828;
+}
+
+/* Vulnerability Info Box */
+.vulnerability-info {
+  background-color: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 30px;
+  color: #333;
+}
+
+.vulnerability-info h3 {
+  color: #f57f17;
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.vulnerability-info p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #1976d2;
+}
+
+/* Loading and Empty States */
+.users-container > p {
+  text-align: center;
+  color: #666;
+  font-size: 16px;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .users-controls {
+    flex-direction: column;
+  }
+
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-danger-dark {
+    width: 100%;
+  }
+
+  .users-table {
+    font-size: 12px;
+  }
+
+  .users-table th,
+  .users-table td {
+    padding: 10px 8px;
+  }
+
+  .csrf-modal {
+    padding: 20px;
+  }
+}

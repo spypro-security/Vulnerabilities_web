@@ -35,6 +35,9 @@ function Navbar({ user, isLoggedIn, onLogout }) {
           {isLoggedIn ? (
             <>
               <Link to="/dashboard" className="nav-link">Dashboard</Link>
+              <Link to="/users" className="nav-link users-link">
+                👥 Users
+              </Link>
               <span className="nav-user">Welcome, {user?.username}</span>
               <button onClick={onLogout} className="nav-button logout">
                 Logout

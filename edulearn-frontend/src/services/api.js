@@ -68,8 +68,16 @@ export const deleteCourse = (id) => {
 };
 
 // Users (IDOR)
+export const getUsers = () => {
+  return api.get('/users/');
+};
+
 export const getUserProfile = (userId) => {
   return api.get(`/users/${userId}/`);
+};
+
+export const deleteUser = (userId) => {
+  return api.post('/users/delete/', { user_id: userId });
 };
 
 export const exportUsers = () => {

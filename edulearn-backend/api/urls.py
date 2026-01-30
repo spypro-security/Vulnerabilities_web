@@ -18,6 +18,7 @@ urlpatterns = [
     path('courses/search/', views.search_courses),
     
     # Users (IDOR)
+    path('users/', views.get_users),
     path('users/<int:user_id>/', views.get_user_profile),
     path('users/export/', views.export_users),
     path('users/delete/', views.delete_account),

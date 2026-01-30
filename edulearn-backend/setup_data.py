@@ -11,13 +11,14 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'edulearn.settings')
 django.setup()
 
 from api.models import User, Course
+from django.db import connections
 
 
-def setup():
-    print("Setting up database...")
+def setup_database(db_name='default'):
+    print(f"Setting up {db_name} database...")
     
     # Create users
-    admin, _ = User.objects.get_or_create(
+    admin, _ = User.objects.using(db_name).get_or_create(
         username='admin',
         defaults={
             'email': 'admin@edulearn.com',
@@ -30,10 +31,10 @@ def setup():
         }
     )
     admin.set_password('admin123')
-    admin.save()
+    admin.save(using=db_name)
     print("✓ Admin user created (admin/admin123)")
     
-    student, _ = User.objects.get_or_create(
+    student, _ = User.objects.using(db_name).get_or_create(
         username='john.doe',
         defaults={
             'email': 'john@example.com',
@@ -44,10 +45,10 @@ def setup():
         }
     )
     student.set_password('john123')
-    student.save()
+    student.save(using=db_name)
     print("✓ Student user created (john.doe/john123)")
     
-    instructor, _ = User.objects.get_or_create(
+    instructor, _ = User.objects.using(db_name).get_or_create(
         username='jane.smith',
         defaults={
             'email': 'jane@example.com',
@@ -58,7 +59,7 @@ def setup():
         }
     )
     instructor.set_password('jane456')
-    instructor.save()
+    instructor.save(using=db_name)
     print("✓ Instructor user created (jane.smith/jane456)")
     
     # Create courses
@@ -110,18 +111,25 @@ def setup():
     ]
     
     for course_data in courses_data:
-        Course.objects.get_or_create(
+        Course.objects.using(db_name).get_or_create(
             title=course_data['title'],
             defaults=course_data
         )
     
     print(f"✓ {len(courses_data)} courses created")
+
+
+if __name__ == '__main__':
+    # Setup both databases with original data
+    setup_database('default')
+    print()
+    setup_database('duplicate')
+    
     print("\n✅ Setup complete!")
+    print("\nDatabases:")
+    print("  Original: db.sqlite3 (default)")
+    print("  Duplicate: vulnerable_db.sqlite3 (for testing)")
     print("\nTest Accounts:")
     print("  Admin: admin / admin123")
     print("  Student: john.doe / john123")
     print("  Instructor: jane.smith / jane456")
-
-
-if __name__ == '__main__':
-    setup()

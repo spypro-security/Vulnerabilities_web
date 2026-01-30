@@ -55,17 +55,21 @@ function Courses({ user }) {
   };
 
   const handleEdit = async (course) => {
-    // Simple inline edit flow: prompt for new title and description
+    // Simple inline edit flow: prompt for new title, description, and price
     const newTitle = window.prompt('Edit course title:', course.title);
     if (newTitle === null) return; // user cancelled
 
     const newDescription = window.prompt('Edit course description:', course.description || '');
     if (newDescription === null) return;
 
+    const newPrice = window.prompt('Edit course price:', course.price || '0.00');
+    if (newPrice === null) return;
+
     try {
       await updateCourse(course.id, {
         title: newTitle,
         description: newDescription,
+        price: parseFloat(newPrice),
       });
       loadCourses();
     } catch (error) {

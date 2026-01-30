@@ -65,7 +65,11 @@ WSGI_APPLICATION = 'edulearn.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',  # Original database
+    },
+    'duplicate': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'vulnerable_db.sqlite3',  # Duplicate database for testing
     }
 }
 

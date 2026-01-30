@@ -4,9 +4,11 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getUserProfile, uploadAssignment, fetchResource, exportUsers } from '../services/api';
 
 function Dashboard({ user }) {
+  const navigate = useNavigate();
   const [profileId, setProfileId] = useState('');
   const [viewedProfile, setViewedProfile] = useState(null);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -54,12 +56,9 @@ function Dashboard({ user }) {
   };
 
   // VULNERABILITY: Sensitive data exposure
-  const handleExportUsers = async () => {
-    try {
-      const response = await exportUsers();
-      console.log('📊 ALL USER DATA:', response.data);
-    } catch (error) {
-    }
+  const handleExportUsers = () => {
+    // Navigate to Database Lab
+    navigate('/database');
   };
 
   return (

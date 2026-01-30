@@ -1,7 +1,7 @@
 /**
- * Database Query Interface Page (Duplicate Database)
+ * Database Query Interface Page
  * File: src/pages/Database.js
- * Allows executing arbitrary SQL queries on a SAFE DUPLICATE database
+ * Allows executing arbitrary SQL queries on the database
  */
 
 import React, { useState } from 'react';
@@ -37,36 +37,28 @@ function Database() {
     }
   };
 
-  const sampleQueries = [
-    'SELECT * FROM employees',
-    'SELECT * FROM sensitive_data',
-    'SELECT * FROM flags',
-    'SHOW TABLES',
-    'SELECT name FROM sqlite_master WHERE type="table"',
-    'SELECT sql FROM sqlite_master WHERE type="table" AND name="employees"',
-    'SELECT * FROM employees WHERE role="admin"',
-    'UPDATE employees SET role="admin" WHERE name="John Doe"',
-    'INSERT INTO employees (name, email, salary, department) VALUES ("Hacker", "hacker@evil.com", 100000, "Security")',
-    'DELETE FROM employees WHERE name="Charlie Wilson"',
-    'SELECT * FROM sensitive_data WHERE access_level="top_secret"',
-    'UPDATE flags SET captured=1 WHERE flag_name="Database_Access"',
-    'DROP TABLE sensitive_data'
+  const hints = [
+    "💡 Tip: Use SELECT to retrieve data from any table",
+    "💡 Tip: Try INSERT to add new records to the database",
+    "💡 Tip: Use UPDATE to modify existing data",
+    "💡 Tip: Use DELETE to remove records from tables",
+    "💡 Tip: Available tables: users, api_course, api_enrollment, api_assignment, api_comment",
+    "💡 Tip: Use WHERE clauses to filter your queries",
+    "💡 Tip: Try SHOW TABLES to see all available tables"
   ];
+
+  const getRandomHint = () => {
+    return hints[Math.floor(Math.random() * hints.length)];
+  };
 
   return (
     <div className="database-page">
       <div className="database-container">
         <div className="database-header">
-          <h1>🛡️ Safe Database Query Interface</h1>
-          <p className="warning-text">
-            ⚠️ <strong>SAFE TESTING ENVIRONMENT:</strong> This interface executes queries on a
-            <strong> DUPLICATE DATABASE</strong> that is completely separate from your main application.
-            You can safely test destructive queries without affecting real data!
-          </p>
+          <h1>� Database Management</h1>
           <div className="db-info">
-            <strong>Database:</strong> vulnerable_db.sqlite3 (Duplicate/Safe)<br/>
-            <strong>Tables:</strong> employees, sensitive_data, flags<br/>
-            <strong>Contains:</strong> Sample employee data, sensitive information, and challenge flags
+            <strong>Tables:</strong> users, api_course, api_enrollment, api_assignment, api_comment<br/>
+            <strong>Contains:</strong> EduLearn course data, user accounts, enrollments, assignments, and course comments
           </div>
         </div>
 
@@ -83,10 +75,13 @@ function Database() {
               id="query"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Enter your SQL query here... (Safe to test anything!)"
+              placeholder="Enter your SQL query here... SELECT, INSERT, UPDATE, DELETE are all supported!"
               className="query-textarea"
-              rows="4"
+              rows="6"
             />
+            <div className="hint-box">
+              {getRandomHint()}
+            </div>
           </div>
 
           <button
@@ -94,23 +89,8 @@ function Database() {
             className="btn btn-danger btn-block"
             disabled={loading}
           >
-            {loading ? 'Executing...' : 'Execute Query (Safe)'}
+            {loading ? 'Executing...' : 'Execute Query'}
           </button>
-        </div>
-
-        <div className="sample-queries">
-          <h3>Sample Queries (Safe to Test)</h3>
-          <div className="query-buttons">
-            {sampleQueries.map((sampleQuery, index) => (
-              <button
-                key={index}
-                onClick={() => setQuery(sampleQuery)}
-                className="btn btn-secondary query-btn"
-              >
-                {sampleQuery.length > 30 ? sampleQuery.substring(0, 30) + '...' : sampleQuery}
-              </button>
-            ))}
-          </div>
         </div>
 
         {results && (

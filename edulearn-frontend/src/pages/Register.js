@@ -11,6 +11,7 @@ function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState('student');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ function Register() {
     }
 
     try {
-      const response = await register(username, password, email);
+      const response = await register(username, password, email, role);
       navigate('/login', { state: { successMessage: 'Account created successfully! You can now login with your credentials.' } });
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -90,7 +91,20 @@ function Register() {
                 required
                 className="form-input"
               />
-              
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="role">User Role</label>
+              <select
+                id="role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="form-input"
+              >
+                <option value="student">Student</option>
+                <option value="instructor">Instructor</option>
+                <option value="admin">Admin</option>
+              </select>
             </div>
 
             <button type="submit" className="btn btn-primary btn-block" disabled={loading}>

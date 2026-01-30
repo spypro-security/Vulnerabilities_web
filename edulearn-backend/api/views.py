@@ -91,6 +91,7 @@ def register(request):
     username = request.data.get('username')
     password = request.data.get('password')  # No strength requirements
     email = request.data.get('email')
+    role = request.data.get('role', 'student')  # Default to student if not specified
     
     if User.objects.filter(username=username).exists():
         return Response({
@@ -101,8 +102,15 @@ def register(request):
     user = User.objects.create_user(
         username=username,
         password=password,
-        email=email
+        email=email,
+        role=role
     )
+    
+    # Set admin/staff flags if role is admin
+    if role == 'admin':
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
     
     logger.info(f"New user registered: {username} with password: {password}")  # Logging password!
     
@@ -545,72 +553,11 @@ def get_vulnerable_db_connection():
 
 
 def create_vulnerable_database(db_path):
-    """Create and populate the duplicate vulnerable database"""
-    conn = sqlite3.connect(db_path)
-    cursor = conn.cursor()
-
-    # Create tables
-    cursor.execute('''
-        CREATE TABLE employees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT UNIQUE,
-            salary REAL,
-            ssn TEXT,
-            credit_card TEXT,
-            department TEXT,
-            role TEXT DEFAULT 'employee'
-        )
-    ''')
-
-    cursor.execute('''
-        CREATE TABLE sensitive_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            data_type TEXT,
-            content TEXT,
-            access_level TEXT
-        )
-    ''')
-
-    cursor.execute('''
-        CREATE TABLE flags (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            flag_name TEXT,
-            flag_value TEXT,
-            captured BOOLEAN DEFAULT FALSE
-        )
-    ''')
-
-    # Insert sample data
-    employees_data = [
-        ('John Doe', 'john@company.com', 75000.00, '123-45-6789', '4111-1111-1111-1111', 'Engineering', 'employee'),
-        ('Jane Smith', 'jane@company.com', 85000.00, '987-65-4321', '4222-2222-2222-2222', 'HR', 'manager'),
-        ('Bob Johnson', 'bob@company.com', 65000.00, '456-78-9012', '4333-3333-3333-3333', 'Sales', 'employee'),
-        ('Alice Brown', 'alice@company.com', 95000.00, '321-54-9876', '4444-4444-4444-4444', 'Executive', 'admin'),
-        ('Charlie Wilson', 'charlie@company.com', 55000.00, '654-32-1987', '4555-5555-5555-5555', 'IT', 'employee'),
-    ]
-
-    cursor.executemany('INSERT INTO employees (name, email, salary, ssn, credit_card, department, role) VALUES (?, ?, ?, ?, ?, ?, ?)', employees_data)
-
-    sensitive_data = [
-        ('API Keys', 'sk-1234567890abcdef, pk-abcdef1234567890', 'confidential'),
-        ('Database Passwords', 'admin:SuperSecret123!, user:Password456!', 'restricted'),
-        ('Internal IPs', '192.168.1.100, 10.0.0.50, 172.16.0.25', 'internal'),
-        ('Encryption Keys', 'AES_KEY_1234567890123456, RSA_PRIVATE_KEY_abcdef...', 'top_secret'),
-    ]
-
-    cursor.executemany('INSERT INTO sensitive_data (data_type, content, access_level) VALUES (?, ?, ?)', sensitive_data)
-
-    flags_data = [
-        ('Database_Access', 'HQX{Database_Query_Interface flag captured}', False),
-        ('Data_Exfiltration', 'HQX{Sensitive_Data_Exposed flag captured}', False),
-        ('Admin_Escalation', 'HQX{Privilege_Escalation flag captured}', False),
-    ]
-
-    cursor.executemany('INSERT INTO flags (flag_name, flag_value, captured) VALUES (?, ?, ?)', flags_data)
-
-    conn.commit()
-    conn.close()
+    """
+    The vulnerable database now uses Django models from the duplicate database configuration.
+    This function is no longer needed as migrations handle schema creation.
+    """
+    pass
 
 
 @api_view(['POST'])
@@ -620,8 +567,8 @@ def execute_query_vulnerable(request):
     Execute arbitrary SQL queries on DUPLICATE database - SEVERE VULNERABILITY
     Allows viewing tables, altering data, and complete database control
     This uses a separate vulnerable database for safe testing
-    Test: {"query": "SELECT * FROM employees"}
-    Test: {"query": "DROP TABLE employees"}
+    Test: {"query": "SELECT * FROM users"}
+    Test: {"query": "SELECT * FROM api_course"}
     """
     query = request.data.get('query', '')
 

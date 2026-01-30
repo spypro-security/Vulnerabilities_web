@@ -42,8 +42,8 @@ export const login = (username, password) => {
   return api.post('/auth/login/', { username, password });
 };
 
-export const register = (username, password, email) => {
-  return api.post('/auth/register/', { username, password, email });
+export const register = (username, password, email, role = 'student') => {
+  return api.post('/auth/register/', { username, password, email, role });
 };
 
 // Courses

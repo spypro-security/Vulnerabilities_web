@@ -52,12 +52,22 @@ function Navbar({ user, isLoggedIn, onLogout }) {
       gap: '10px',
       textDecoration: 'none',
       color: '#111827',
-      fontSize: '20px',
+      fontSize: '18px',
       fontWeight: '700',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
     },
 
-    logoIcon: {
-      fontSize: '24px',
+    logoImage: {
+      height: '36px',
+      width: 'auto',
+      objectFit: 'contain',
+      flexShrink: 0,
+    },
+
+    logoText: {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
 
     desktopMenu: {
@@ -137,6 +147,7 @@ function Navbar({ user, isLoggedIn, onLogout }) {
       border: 'none',
       cursor: 'pointer',
       padding: '8px',
+      flexShrink: 0,
     },
 
     hamburger: {
@@ -230,6 +241,23 @@ function Navbar({ user, isLoggedIn, onLogout }) {
     @media (max-width: 768px) {
       .desktop-only { display: none !important; }
       .mobile-toggle { display: block !important; }
+      .navbar-logo {
+        font-size: 14px !important;
+        gap: 8px !important;
+      }
+      .navbar-logo img {
+        height: 32px !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .navbar-logo {
+        font-size: 12px !important;
+        gap: 6px !important;
+      }
+      .navbar-logo img {
+        height: 28px !important;
+      }
     }
 
     .nav-link:hover {
@@ -313,9 +341,13 @@ function Navbar({ user, isLoggedIn, onLogout }) {
       <style>{css}</style>
       <nav style={styles.navbar}>
         <div style={styles.container}>
-          <Link to="/" style={styles.logo}>
-            <span style={styles.logoIcon}>📚</span>
-            <span>EduLearn</span>
+          <Link to="/" className="navbar-logo" style={styles.logo}>
+            <img 
+              src="/logo.png" 
+              alt="SpyPro Security Solutions" 
+              style={styles.logoImage}
+            />
+            <span style={styles.logoText}>SpyPro Security Solutions Pvt.Ltd.</span>
           </Link>
 
           <div className="desktop-only" style={styles.desktopMenu}>

@@ -137,7 +137,7 @@ function Register() {
         <div className="left-panel" style={styles.leftPanel}>
           <div className="branding-content" style={styles.brandingContent}>
             <div style={styles.logoContainer}>
-              <div style={styles.logo}>EduLearn</div>
+              <div style={styles.logo}>SpyPro Security Solutions Pvt.Ltd.</div>
             </div>
             <h2 className="brand-title" style={styles.brandTitle}>Start Your Learning Journey</h2>
             <p className="brand-subtitle" style={styles.brandSubtitle}>
